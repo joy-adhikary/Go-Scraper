@@ -10,7 +10,7 @@ import (
 
 func main() {
 
-	url := hlp.GetEnv("URL")
+	url := hlp.GetEnv("URLSC")
 
 	c := colly.NewCollector(
 		colly.Async(true),
