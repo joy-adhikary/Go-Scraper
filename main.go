@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-	url := hlp.GetEnv("URL")
+	url := hlp.GetEnv("URLS")
 	stocks := []typ.Stocks{}
 
 	c := colly.NewCollector()
