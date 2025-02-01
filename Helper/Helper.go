@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 func GetEnv(key string) string {
@@ -95,4 +97,51 @@ func DumpToCSV(stocks []typ.Stocks) error {
 	}
 
 	return nil
+}
+
+func ParseScoreString(scoreStr string) (*typ.ScoreData, error) {
+	// Remove extra whitespace and split into parts
+	parts := strings.Fields(scoreStr)
+
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid score format: %s", scoreStr)
+	}
+
+	team := parts[0]
+
+	scorePart := strings.Trim(parts[1], "()")
+
+	scoreParts := strings.Split(scorePart, "/")
+
+	if len(scoreParts) != 2 {
+		return nil, fmt.Errorf("invalid score format: %s", scoreStr)
+	}
+
+	// Parse wickets and overs
+	wickets, err := strconv.Atoi(scoreParts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid wickets: %s", err)
+	}
+
+	runs, err := strconv.Atoi(scoreParts[0])
+	if err != nil {
+		return nil, fmt.Errorf("invalid runs: %s", err)
+	}
+
+	// Extract CRR if available
+	//var crr float64
+	//if len(parts) > 2 {
+	//	crrStr := strings.TrimPrefix(parts[2], "CRR:")
+	//	crr, err = strconv.ParseFloat(crrStr, 64)
+	//	if err != nil {
+	//		return nil, fmt.Errorf("invalid CRR: %s", err)
+	//	}
+	//}
+
+	return &typ.ScoreData{
+		Team:    team,
+		Wickets: wickets,
+		Runs:    runs,
+		Overs:   parts[2],
+	}, nil
 }

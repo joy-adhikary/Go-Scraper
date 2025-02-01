@@ -7,21 +7,9 @@ type Stocks struct {
 	Change       string
 }
 
-var CompanyNames = []string{
-	"MSFT",
-	"GE",
-	"UNP",
-	"COST",
-	"MCD",
-	"V",
-	"DIS",
-	"MMM",
-	"INTC",
-	"AXP",
-	"AAPL",
-	"BA",
-	"GS",
-	"JPM",
-	"VZ",
-	"NVDA",
+type ScoreData struct {
+	Team    string
+	Wickets int
+	Overs   string
+	Runs    int
 }
