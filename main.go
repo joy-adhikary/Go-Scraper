@@ -4,55 +4,75 @@ import (
 	"fmt"
 	"github.com/gocolly/colly"
 	hlp "github.com/joy-adhikaryy/Go-Scraper/Helper"
-	"math/rand"
+	"strings"
 	"time"
 )
 
 func main() {
 
-	url := hlp.GetEnv("URLSC")
+	url := hlp.GetEnv("URLCA")
 
 	c := colly.NewCollector(
 		colly.Async(true),
 	)
+
+	c.AllowURLRevisit = true
 
 	c.OnError(func(r *colly.Response, err error) {
 		fmt.Println("Request URL:", r.Request.URL, "failed with response:", r, "\nError:", err)
 	})
 
 	c.OnRequest(func(r *colly.Request) {
+		r.Headers.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
 		fmt.Println("Currently Visiting", r.URL)
 	})
 
-	c.OnHTML("div#matchCenter", func(e *colly.HTMLElement) {
+	c.OnHTML("div.content-wrapper", func(e *colly.HTMLElement) {
+		e.ForEach("div.container table", func(_ int, table *colly.HTMLElement) {
+			// getting Header
+			header := table.ChildText("thead tr:first-child th")
 
-		title := e.ChildText("h1.cb-nav-hdr")
-		fmt.Println("Match information:", title)
+			if strings.Contains(header, "Interbank USD/BDT") {
+				// Table A (Interbank rates)
+				cleanedHeader := strings.ReplaceAll(header, "\n", "")
+				cleanedHeader = strings.ReplaceAll(cleanedHeader, "\t", "")
+				fmt.Println(cleanedHeader)
 
-		score := e.ChildText("div.cb-min-bat-rw")
-		scoreData, err := hlp.ParseScoreString(score)
+				table.ForEach("tbody tr", func(_ int, row *colly.HTMLElement) {
+					currency := row.ChildText("td:nth-child(1)")
+					dayLow := row.ChildText("td:nth-child(2)")
+					dayHigh := row.ChildText("td:nth-child(3)")
+					currentWar := row.ChildText("td:nth-child(4)")
 
-		if err != nil {
-			fmt.Println("Error:", err)
-			return
-		}
+					fmt.Printf("%s: DayLow=%s, DayHigh=%s, CurrentWar=%s\n",
+						currency, dayLow, dayHigh, currentWar)
+				})
 
-		fmt.Println("Team: ", scoreData.Team)
-		fmt.Println("Runs: ", scoreData.Runs)
-		fmt.Println("Wicket: ", scoreData.Wickets)
-		fmt.Println("Overs: ", scoreData.Overs)
+			} else if strings.Contains(header, "Cross rates") {
+				// Table B (Cross rates)
+				date := table.ChildText("thead tr:first-child th")
+				fmt.Printf("\nCross Rates (%s):\n", strings.TrimSpace(date))
 
-		status := e.ChildText("div.cb-text-inprogress")
-		fmt.Println("Status:", status)
+				table.ForEach("tbody tr", func(_ int, row *colly.HTMLElement) {
+					currency := row.ChildText("td:nth-child(1)")
+					buyingRate := row.ChildText("td:nth-child(2)")
+					sellingRate := row.ChildText("td:nth-child(3)")
+
+					fmt.Printf("%s: Buy=%s, Sell=%s\n",
+						currency, buyingRate, sellingRate)
+				})
+			}
+		})
 	})
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
+	counter := 0
 
 	for range ticker.C {
-		fmt.Println("hited")
-		randomNumber := rand.Intn(100)
-		randomNumberStr := fmt.Sprintf("%d", randomNumber)
-		c.Visit(url + "?joy=" + randomNumberStr)
+		fmt.Println("hit", counter)
+		c.Visit(url)
+		c.Wait()
+		counter++
 	}
 }
